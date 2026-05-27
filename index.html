@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ServiceProCba</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0c10;padding:16px;font-family:Arial}
+.app{max-width:500px;margin:0 auto;background:white;border-radius:30px;overflow:hidden}
+.header{background:#1a1d24;color:white;padding:30px;text-align:center}
+.tabs{display:flex}
+.tab{flex:1;text-align:center;padding:15px;cursor:pointer;font-weight:bold}
+.tab.active{color:#4f46e5;border-bottom:2px solid #4f46e5}
+.tab-content{display:none;padding:20px}
+.tab-content.active{display:block}
+.service-card{background:#f5f5f5;border-radius:15px;padding:15px;margin-bottom:12px;cursor:pointer}
+.form-group{margin-bottom:15px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px}
+.btn{background:#1f2937;color:white;border:none;padding:14px;border-radius:16px;width:100%;font-weight:bold}
+.floating{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:10px;z-index:1000}
+.whatsapp-btn,.emergency-btn{width:55px;height:55px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+.whatsapp-btn{background:#25D366;color:white}
+.emergency-btn{background:#dc2626;color:white;animation:pulse 1.5s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,0.5)}70%{box-shadow:0 0 0 15px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:8px 16px;border-radius:30px;display:none}
+.install-banner{background:#4f46e5;color:white;text-align:center;padding:12px;cursor:pointer;display:none}
+</style>
+</head>
+<body>
+
+<div class="install-banner" id="installBanner" onclick="instalarApp()">📲 INSTALAR SERVICEPROCBA 📲</div>
+
+<div class="app">
+<div class="header">
+<h1>🛠️ SERVICEPROCBA</h1>
+<p>Servicios de Mantenimiento</p>
+<p style="font-size:12px;margin-top:10px">📞 3512529636 | 💬 3512529636</p>
+</div>
+
+<div class="tabs">
+<div class="tab active" data-tab="servicios">SERVICIOS</div>
+<div class="tab" data-tab="presupuesto">PRESUPUESTO</div>
+<div class="tab" data-tab="servicio">SERVICIO</div>
+</div>
+
+<div id="serviciosTab" class="tab-content active">
+<div class="service-card" onclick="seleccionarServicio('electricidad')">⚡ ELECTRICIDAD - Instalaciones y reparaciones eléctricas</div>
+<div class="service-card" onclick="seleccionarServicio('plomeria')">💧 PLOMERÍA - Pérdidas, sanitarios, termotanques</div>
+<div class="service-card" onclick="seleccionarServicio('gas')">🔥 GAS - Instalaciones y detección de fugas</div>
+<div class="service-card" onclick="seleccionarServicio('construccion')">🏗️ CONSTRUCCIÓN - Reformas y ampliaciones</div>
+<div class="service-card" onclick="seleccionarServicio('aire')">❄️ AIRE ACONDICIONADO - Instalación y mantenimiento</div>
+<div style="background:#e8f5e9;border-radius:15px;padding:12px;text-align:center;margin-top:10px">✅ Profesionales matriculados • Trabajos garantizados</div>
+</div>
+
+<div id="presupuestoTab" class="tab-content">
+<div class="form-group"><input type="text" id="presuNombre" placeholder="Tu nombre"></div>
+<div class="form-group"><input type="tel" id="presuTelefono" placeholder="Teléfono"></div>
+<div class="form-group"><select id="presuCategoria"><option value="electricidad">⚡ Electricidad</option><option value="plomeria">💧 Plomería</option><option value="gas">🔥 Gas</option></select></div>
+<div class="form-group"><textarea id="presuDescripcion" rows="3" placeholder="Describe el trabajo..."></textarea></div>
+<button class="btn" onclick="solicitarPresupuesto()">💰 SOLICITAR PRESUPUESTO</button>
+</div>
+
+<div id="servicioTab" class="tab-content">
+<div class="form-group"><input type="text" id="nombre" placeholder="Tu nombre"></div>
+<div class="form-group"><input type="tel" id="telefono" placeholder="Teléfono"></div>
+<div class="form-group"><input type="text" id="direccion" placeholder="Dirección"></div>
+<div class="form-group"><textarea id="descripcion" rows="3" placeholder="Describe el problema..."></textarea></div>
+<button class="btn" onclick="crearSolicitud()">🚀 SOLICITAR SERVICIO</button>
+</div>
+
+<div id="adminPanel" style="background:#1e293b;color:white;padding:12px;margin:16px;border-radius:25px;text-align:center;cursor:pointer" onclick="toggleAdmin()">🔐 PANEL ADMIN</div>
+<div id="adminSection" style="display:none;background:#f5f5f5;padding:15px;margin:0 16px 16px;border-radius:20px">
+<h3>📊 PRESUPUESTOS PENDIENTES</h3>
+<div id="pendientes"></div>
+</div>
+</div>
+
+<div class="floating">
+<div class="whatsapp-btn" onclick="window.open('https://wa.me/3512529636','_blank')">💬</div>
+<div class="emergency-btn" onclick="if(confirm('¿Llamar a emergencias?')){window.location.href='tel:3512529636'}">🚨</div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+let solicitudes = JSON.parse(localStorage.getItem('solicitudes') || '[]');
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('installBanner').style.display = 'block'; });
+function instalarApp() { if(deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; document.getElementById('installBanner').style.display = 'none'; } }
+
+function seleccionarServicio(s) { document.querySelector('.tab[data-tab="presupuesto"]').click(); document.getElementById('presuCategoria').value = s; mostrarToast('✓ Servicio seleccionado'); }
+function solicitarPresupuesto() { let n=document.getElementById('presuNombre').value, t=document.getElementById('presuTelefono').value, d=document.getElementById('presuDescripcion').value; if(!n||!t||!d){mostrarToast('Complete campos',true); return;} solicitudes.unshift({id:Date.now(),tipo:'presupuesto',nombre:n,telefono:t,descripcion:d}); localStorage.setItem('solicitudes',JSON.stringify(solicitudes)); mostrarToast('✓ Presupuesto enviado'); limpiarCampos(); mostrarPendientes(); }
+function crearSolicitud() { let n=document.getElementById('nombre').value, t=document.getElementById('telefono').value, d=document.getElementById('direccion').value, desc=document.getElementById('descripcion').value; if(!n||!t||!d||!desc){mostrarToast('Complete campos',true); return;} solicitudes.unshift({id:Date.now(),tipo:'servicio',nombre:n,telefono:t,direccion:d,descripcion:desc}); localStorage.setItem('solicitudes',JSON.stringify(solicitudes)); mostrarToast('✓ Servicio solicitado'); limpiarCampos(); }
+function limpiarCampos() { document.querySelectorAll('input,textarea').forEach(c=>c.value=''); }
+function mostrarPendientes() { let pendientes = solicitudes.filter(s=>s.tipo==='presupuesto'&&!s.respuesta); let html = pendientes.map(s=>`<div style="background:white;padding:12px;border-radius:12px;margin-bottom:10px"><strong>${s.nombre}</strong> - ${s.telefono}<br><small>${s.descripcion.substring(0,80)}</small><br><button onclick="responder(${s.id})" style="margin-top:8px;background:#10b981;color:white;border:none;padding:6px12px;border-radius:10px">📝 Responder</button></div>`).join(''); document.getElementById('pendientes').innerHTML = html || '<p>No hay pendientes</p>'; }
+function responder(id) { let s = solicitudes.find(s=>s.id===id); let monto = prompt('Monto del presupuesto:'); let detalle = prompt('Detalle del trabajo:'); if(detalle){ s.respuesta={monto:monto||'A convenir',detalle}; localStorage.setItem('solicitudes',JSON.stringify(solicitudes)); mostrarToast('✓ Presupuesto enviado'); mostrarPendientes(); if(confirm('¿Notificar por WhatsApp?')){ window.open(`https://wa.me/${s.telefono}?text=${encodeURIComponent(`*PRESUPUESTO*\nHola ${s.nombre}\n💰 Monto: $${monto}\n📋 Detalle: ${detalle}`)}`,'_blank');} } }
+function toggleAdmin() { let sec = document.getElementById('adminSection'); sec.style.display = sec.style.display === 'none' ? 'block' : 'none'; mostrarPendientes(); }
+function mostrarToast(msg,error=false){ let t=document.getElementById('toast'); t.textContent=msg; t.style.backgroundColor=error?'#dc2626':'#10b981'; t.style.display='block'; setTimeout(()=>t.style.display='none',2000); }
+document.querySelectorAll('.tab').forEach(t=>{t.addEventListener('click',()=>{let n=t.dataset.tab; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); t.classList.add('active'); document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.getElementById(n+'Tab').classList.add('active');});});
+</script>
+</body>
+</html>
